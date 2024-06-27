@@ -17,7 +17,9 @@ npm install minidash
 ## How to use
 
 ```js
-const minidash = require("minidash");
+import { checkedArr } from minidash;
+
+checkedArr([1, 2, 3, 4, 5]);  // true
 ```
 
 ## Contribution
