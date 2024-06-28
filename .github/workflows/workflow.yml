@@ -13,29 +13,38 @@ jobs: # 작업 정의
       - uses: actions/github-script@v7
         with:
           script: | # 스크립트 시작
-            const pull_request = context.payload.pull_request; # pull request 객체 가져오기
-
-            if (pull_request === undefined) {
-              console.log("This is not a pull request"); # "This is not a pull request" 출력
-              return; # 종료
+            async function run() {
+              const pull_request = context.payload.pull_request; # pull request 객체 가져오기
+  
+              if (pull_request === undefined) {
+                console.log("This is not a pull request"); # "This is not a pull request" 출력
+                return; # 종료
+              }
+  
+              const body = pull_request.body;
+  
+              if (!body) {
+                try {
+                  // PR에 코멘트 추가
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner, // 저장소 소유자
+                    repo: context.repo.repo, // 저장소 이름
+                    issue_number: pull_request.number, // PR 번호
+                    body: "해당 PR은 가이드라인을 준수하지 않았기 때문에 PR을 닫습니다. 가이드라인을 지켜서 다시 PR 해주세요.", // 코멘트 내용
+                  });
+    
+                  // PR 닫기
+                  await github.rest.pulls.update({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    pull_number: pull_request.number,
+                    state: "closed", // 상태를 닫힘으로 변경
+                  });
+                  console.log("PR was closed successfully.");
+                } catch (error) {
+                  console.error("Error occurred while closing PR:", error);
+                }
+              }
             }
 
-            const body = pull_request.body;
-
-            if (!body) {
-              // PR에 코멘트 추가
-              await github.rest.issues.createComment({
-                owner: context.repo.owner, // 저장소 소유자
-                repo: context.repo.repo, // 저장소 이름
-                issue_number: pull_request.number, // PR 번호
-                body: "해당 PR은 가이드라인을 준수하지 않았기 때문에 PR을 닫습니다. 가이드라인을 지켜서 다시 PR 해주세요.", // 코멘트 내용
-              });
-
-              // PR 닫기
-              await github.rest.pulls.update({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: pull_request.number,
-                state: "closed", // 상태를 닫힘으로 변경
-              });
-            }
+            run();
